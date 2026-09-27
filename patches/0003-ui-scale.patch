@@ -1,0 +1,243 @@
+diff --git a/src/app/script/app/kl-app.ts b/src/app/script/app/kl-app.ts
+index 5eca286..394fb06 100644
+--- a/src/app/script/app/kl-app.ts
++++ b/src/app/script/app/kl-app.ts
+@@ -18,6 +18,7 @@ import { importFilters } from '../klecks/filters/filters-lazy';
+ import { klCanvasToPsdBlob } from '../klecks/storage/kl-canvas-to-psd-blob';
+ import { ProjectStore } from '../klecks/storage/project-store';
+ import { SaveReminder } from '../klecks/ui/components/save-reminder';
++import { getUiScale, onUiScaleChange } from '../klecks/ui/ui-scale';
+ import { KlCanvas } from '../klecks/canvas/kl-canvas';
+ import { LANG } from '../language/language';
+ import { LocalStorage } from '../bb/base/local-storage';
+@@ -143,7 +144,12 @@ export class KlApp {
+     private readonly mobileColorUi: MobileColorUi;
+     private readonly toolspace: HTMLElement;
+     private readonly toolspaceInner: HTMLElement;
+-    private readonly toolWidth: number = 271;
++    private readonly toolWidthBase: number = 271;
++
++    // 本项目补丁 P3：工具栏宽度随界面缩放变化，画布才为"被放大后的工具栏"留对空间
++    private get toolWidth(): number {
++        return Math.round(this.toolWidthBase * getUiScale());
++    }
+     private readonly toolspaceTopRow: ToolspaceTopRow | EmbedToolspaceTopRow;
+     private readonly bottomBar: HTMLElement | undefined;
+     private readonly layersUi: LayersUi;
+@@ -173,7 +179,7 @@ export class KlApp {
+             if (this.mobileUi.getToolspaceIsOpen()) {
+                 if (this.uiLayout === 'left') {
+                     css(this.easel.getElement(), {
+-                        left: 271,
++                        left: this.toolWidth,
+                     });
+                 } else {
+                     css(this.easel.getElement(), {
+@@ -202,7 +208,7 @@ export class KlApp {
+             this.mobileUi.setIsVisible(false);
+             if (this.uiLayout === 'left') {
+                 css(this.easel.getElement(), {
+-                    left: 271,
++                    left: this.toolWidth,
+                 });
+             }
+             this.toolspace.style.display = 'block';
+@@ -233,7 +239,7 @@ export class KlApp {
+                 right: '',
+             });
+             css(this.easel.getElement(), {
+-                left: 271,
++                left: this.toolWidth,
+             });
+         } else {
+             css(this.toolspace, {
+@@ -1098,7 +1104,8 @@ export class KlApp {
+                 right: 0,
+                 top: 0,
+                 bottom: 0,
+-                width: this.toolWidth,
++                // 基准宽度：放大由 ui-scale 的 CSS zoom 负责（两处都放大就变成平方了）
++                width: this.toolWidthBase,
+                 overflow: 'hidden',
+                 userSelect: 'none',
+                 touchAction: 'none',
+@@ -2173,6 +2180,9 @@ export class KlApp {
+         this.resize(this.uiWidth, this.uiHeight);
+         this.updateUi();
+ 
++        // 本项目补丁 P3：界面缩放一变就重排（工具栏宽度变了，画布要让位）
++        onUiScaleChange(() => this.refreshUiScale());
++
+         const importHandler = new KlAppImportHandler(
+             {
+                 klRootEl: this.rootEl,
+@@ -2299,6 +2309,12 @@ export class KlApp {
+         return this.rootEl;
+     }
+ 
++    /** 本项目补丁 P3：界面缩放变化后强制重排 —— resize() 有"尺寸没变就 return"的守卫，靠它唤不动 */
++    refreshUiScale(): void {
++        this.updateCollapse();
++        this.updateBottomBar();
++    }
++
+     resize(w: number, h: number): void {
+         // iPad scrolls down when increasing text zoom
+         if (window.scrollY > 0) {
+diff --git a/src/app/script/klecks/ui/tool-tabs/settings-ui.ts b/src/app/script/klecks/ui/tool-tabs/settings-ui.ts
+index 733ba4b..33a2651 100644
+--- a/src/app/script/klecks/ui/tool-tabs/settings-ui.ts
++++ b/src/app/script/klecks/ui/tool-tabs/settings-ui.ts
+@@ -18,6 +18,13 @@ import {
+     setSymmetryHorizontal,
+     setSymmetryVertical,
+ } from '../../brushes/symmetry-brush';
++import {
++    changeUiScale,
++    getUiScale,
++    onUiScaleChange,
++    setUiScale,
++    UI_SCALE_STEP,
++} from '../ui-scale';
+ 
+ const bitbofLogoImg = getIconUrl('bitbof-logo');
+ const uiSwapImg = getIconUrl('ui-swap-lr');
+@@ -194,6 +201,56 @@ export class SettingsUi {
+             }).getElement(),
+         );
+ 
++        // ---- 界面缩放（本项目补丁 P3：低分屏下界面元素太小 / 太挤）----
++        const scaleRow = BB.el({
++            parent: this.rootEl,
++            css: {
++                marginTop: 15,
++                display: 'flex',
++                alignItems: 'center',
++                flexWrap: 'wrap',
++                gap: 8,
++            },
++        });
++        BB.el({
++            parent: scaleRow,
++            content: '界面大小 / UI size:',
++            css: { marginRight: 5, marginBottom: 2 },
++        });
++        const mkScaleButton = (label: string, delta: number) => {
++            const btn = BB.el({
++                parent: scaleRow,
++                content: label,
++                css: {
++                    minWidth: 32,
++                    padding: '2px 6px',
++                    textAlign: 'center',
++                    cursor: 'pointer',
++                    border: '1px solid #999',
++                    borderRadius: 4,
++                    userSelect: 'none',
++                },
++            });
++            btn.addEventListener('click', () => {
++                changeUiScale(delta);
++            });
++            return btn;
++        };
++        mkScaleButton('−', -UI_SCALE_STEP);
++        const scaleLabel = BB.el({
++            parent: scaleRow,
++            content: Math.round(getUiScale() * 100) + '%',
++            css: { minWidth: 46, textAlign: 'center', cursor: 'pointer' },
++        });
++        scaleLabel.title = '点击恢复 100% / click to reset';
++        scaleLabel.addEventListener('click', () => {
++            setUiScale(1);
++        });
++        mkScaleButton('+', UI_SCALE_STEP);
++        onUiScaleChange((scale) => {
++            scaleLabel.textContent = Math.round(scale * 100) + '%';
++        });
++
+         // ---- save reminder ----
+         if (saveReminder) {
+             const reminderSelect = new SelectCustom({
+diff --git a/src/app/script/klecks/ui/ui-scale.ts b/src/app/script/klecks/ui/ui-scale.ts
+new file mode 100644
+index 0000000..f0be050
+--- /dev/null
++++ b/src/app/script/klecks/ui/ui-scale.ts
+@@ -0,0 +1,76 @@
++import { LocalStorage } from '../../bb/base/local-storage';
++
++/**
++ * 本项目补丁 P3 —— 界面缩放（低分屏下界面元素太小 / 太挤）。
++ *
++ * 为什么只缩"外壳"：实测（Electron/Chromium 144，窗口 1424×861）
++ *   对 app 根或 body 加 zoom 时，画布后备尺寸与显示尺寸会脱钩：
++ *   zoom=1.5 → 画布后备仍是 1153，但渲染宽变成 1730，而窗口只有 1424
++ *   → 画布被拉模糊 + 右边被切掉。所以画布必须保持原生 1:1。
++ *
++ * 做法：
++ *   1) 用 CSS zoom 放大界面外壳（工具栏 / 对话框 / 状态浮层）；
++ *   2) 同时把 kl-app 的 toolWidth 按同一比例放大（见 kl-app.ts 的 getter），
++ *      否则外壳变大而画布预留空间不变 → 工具栏会压住画布。
++ */
++
++const LS_KEY = 'kl-ui-scale';
++export const UI_SCALE_MIN = 0.75;
++export const UI_SCALE_MAX = 2;
++export const UI_SCALE_STEP = 0.125;
++
++/** 需要跟着缩放的界面外壳（画布/视口不在其列） */
++const CHROME_SELECTORS = ['.kl-toolspace', '.kl-d-modal-root', '.top-overlay', '.kl-select-custom-options'];
++
++const STYLE_ID = 'kl-ui-scale-style';
++
++let current = normalize(parseFloat(LocalStorage.getItem(LS_KEY) ?? '1'));
++const listeners: Array<(scale: number) => void> = [];
++
++function normalize(value: number): number {
++    if (!Number.isFinite(value)) {
++        return 1;
++    }
++    const stepped = Math.round(value / UI_SCALE_STEP) * UI_SCALE_STEP;
++    return Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, Math.round(stepped * 1000) / 1000));
++}
++
++export function getUiScale(): number {
++    return current;
++}
++
++export function applyUiScale(): void {
++    let styleEl = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
++    if (!styleEl) {
++        if (!document.head) {
++            return;
++        }
++        styleEl = document.createElement('style');
++        styleEl.id = STYLE_ID;
++        document.head.append(styleEl);
++    }
++    styleEl.textContent = CHROME_SELECTORS.map((sel) => `${sel} { zoom: ${current}; }`).join('\n');
++}
++
++export function setUiScale(value: number): void {
++    const next = normalize(value);
++    if (next === current) {
++        return;
++    }
++    current = next;
++    LocalStorage.setItem(LS_KEY, String(next));
++    applyUiScale();
++    listeners.forEach((fn) => fn(next));
++}
++
++export function changeUiScale(delta: number): void {
++    setUiScale(current + delta);
++}
++
++export function onUiScaleChange(fn: (scale: number) => void): void {
++    listeners.push(fn);
++    fn(current);
++}
++
++// 尽早应用一次：模块在 body 末尾以 module 方式加载，此时 head 已存在
++applyUiScale();

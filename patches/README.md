@@ -6,7 +6,10 @@
 git clone https://github.com/bitbof/klecks.git && cd klecks && git checkout d705854
 git apply ../kleks-desktop/patches/0001-global-symmetry.patch
 git apply ../kleks-desktop/patches/0002-visible-rect-render.patch
+git apply ../kleks-desktop/patches/0003-ui-scale.patch
 ```
+
+三个补丁按序应用（已实测：在 `d705854` 的干净工作树上依次 apply 全部成功，结果与开发工作树逐字节一致）。
 
 ---
 

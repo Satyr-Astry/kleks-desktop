@@ -17,6 +17,7 @@ An Electron shell + focused patches that turn the open-source Klecks painting ap
 | **磁盘自动保存** | 拦截 `will-download`，把上游自己的"保存"产物改道到 `Kleks-Data/autosave/`；定时 + 关闭前 + `Ctrl+Alt+S`；保留最近 10 份 | 自检真写出 PNG 33.7 KB / 50.5 KB，打开确认**里面有画的笔迹** |
 | **双击图片打开** | HKCU 注册 `OpenWithProgids`（不抢默认程序）+ 单实例 + 命令行/拖拽打开，用「合成 drop 事件」交给上游导入流程 | winreg 核对 6 个扩展名全部注册成功；投喂 PNG 后上游导入对话框正确弹出 |
 | **全局对称绘制**（补丁 0001） | 铅笔/素描/像素/橡皮走 Proxy 包装；**水彩/晕染/异形图形走笔刷内置对称**（同一实例、同一缓存、每帧一次写回，实时且交界不闪） | 镜像像素写入量 ×2.0（如 16300→32604）；不对称率 0.0099→0.0014（−86%）；关→开→再关同一会话回归通过 |
+| **界面缩放 75%~200%**（补丁 0003） | 设置面板加「界面大小」控件；只缩放界面外壳（工具栏/对话框/状态浮层），画布保持原生 1:1，并把 app 的工具栏宽度常数一起缩放 | 100%/125%/150%/75% 四档实测：工具栏视觉宽 271→339→407→203，画布自动重排让位，**画布与工具栏重叠恒为 0**、画布后备分辨率不衰减（不模糊） |
 | **大画布渲染优化**（补丁 0002） | 每帧不再把整张 document 画布交给浏览器缩放，只绘制视口可见的源矩形 | 2K 画布下可见区仅 1165×873（≈整张的 25%）→ 合成成本降约 4 倍；缩放后截图确认无缺块/空条带 |
 | **性能开关** | 启用 GPU 光栅化 / 零拷贝 / 忽略 GPU 黑名单 | 默认条件下帧间隔 16.7 ms（60 FPS），帧率探针量化 |
 | **菜单栏 / 关闭体验** | 去掉 Electron 菜单栏并自接快捷键；接管 `will-prevent-unload`（否则点 X 关不掉窗口） | `isMenuBarVisible=false`；`closeTest=closed` |
@@ -89,7 +90,7 @@ Kleks.exe --probe-perf     # 复现型压测：KLEKS_DOC=2000 KLEKS_BRUSH_SIZE=2
 
 ```
 shell/     Electron 外壳：main.js（服务器/窗口/自动保存/文件关联/自检）、perf-probe.js、package.json
-patches/   0001 全局对称绘制；0002 视口可见区渲染优化（另有 README 说明取舍）
+patches/   0001 全局对称绘制；0002 视口可见区渲染优化；0003 界面缩放（另有 README 说明取舍）
 installer/ NSIS 安装包脚本（可选桌面/开始菜单快捷方式）+ build.py
 android/   Android APK 工程（WebView + 本地服务器）+ build.py
 tools/     pack_kleks.py（组装便携版）、make_icon.py（由上游 PNG 生成 ico）
