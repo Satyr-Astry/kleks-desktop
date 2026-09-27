@@ -1,0 +1,25 @@
+# 运行时产物 / 依赖
+node_modules/
+dist/
+Kleks-Data/
+*.asar
+electron.exe
+Kleks.exe
+
+# 构建与自检产物
+*.log
+app-log.txt
+smoke-result.json
+brush-probe.json
+probe-result.json
+smoke-*.png
+perf-probe*.json
+perf-probe*.png
+
+# 系统
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 图标（构建时由上游 PNG 生成，不入库）
+*.ico

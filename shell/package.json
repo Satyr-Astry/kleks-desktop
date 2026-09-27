@@ -1,0 +1,16 @@
+{
+  "name": "kleks-desktop",
+  "productName": "Kleks",
+  "version": "1.0.0",
+  "description": "Klecks (Kleki 开源版) 的离线桌面外壳",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^32.2.0"
+  }
+}

@@ -1,0 +1,694 @@
+diff --git a/src/app/script/klecks/brushes-ui/blend-brush-ui.ts b/src/app/script/klecks/brushes-ui/blend-brush-ui.ts
+index 91e7b47..7876622 100644
+--- a/src/app/script/klecks/brushes-ui/blend-brush-ui.ts
++++ b/src/app/script/klecks/brushes-ui/blend-brush-ui.ts
+@@ -8,6 +8,7 @@ import { KlSlider } from '../ui/components/kl-slider';
+ import { TBrushUi } from '../kl-types';
+ import { LANG, LANGUAGE_STRINGS } from '../../language/language';
+ import { BlendBrush } from '../brushes/blend-brush';
++import { createSymmetryBrush } from '../brushes/symmetry-brush';
+ 
+ export const blendBrushUi = (function () {
+     const brushInterface = {
+@@ -35,7 +36,11 @@ export const blendBrushUi = (function () {
+ 
+     brushInterface.Ui = function (p) {
+         const div = document.createElement('div'); // the gui
+-        const brush = new BRUSHES.BlendBrush();
++        const brush = createSymmetryBrush(
++        new BRUSHES.BlendBrush(),
++        () => new BRUSHES.BlendBrush(),
++        { mode: 'native' },
++    );
+         brush.setHistory(p.klHistory);
+         p.onSizeChange(brush.getSize());
+ 
+diff --git a/src/app/script/klecks/brushes-ui/chemy-brush-ui.ts b/src/app/script/klecks/brushes-ui/chemy-brush-ui.ts
+index 1840be5..f59e418 100644
+--- a/src/app/script/klecks/brushes-ui/chemy-brush-ui.ts
++++ b/src/app/script/klecks/brushes-ui/chemy-brush-ui.ts
+@@ -10,6 +10,7 @@ import { BoxToggle } from '../ui/components/box-toggle';
+ import { LANG, LANGUAGE_STRINGS } from '../../language/language';
+ import { ChemyBrush } from '../brushes/chemy-brush';
+ import { css } from '../../bb/base/base';
++import { createSymmetryBrush } from '../brushes/symmetry-brush';
+ 
+ export const chemyBrushUi = (function () {
+     const brushInterface = {
+@@ -33,7 +34,11 @@ export const chemyBrushUi = (function () {
+ 
+     brushInterface.Ui = function (p) {
+         const div = document.createElement('div'); // the gui
+-        const brush = new BRUSHES.ChemyBrush();
++        const brush = createSymmetryBrush(
++        new BRUSHES.ChemyBrush(),
++        () => new BRUSHES.ChemyBrush(),
++        { mode: 'native' },
++    );
+         brush.setHistory(p.klHistory);
+         p.onSizeChange(brush.getSize());
+ 
+diff --git a/src/app/script/klecks/brushes-ui/eraser-brush-ui.ts b/src/app/script/klecks/brushes-ui/eraser-brush-ui.ts
+index d1ab558..58991a7 100644
+--- a/src/app/script/klecks/brushes-ui/eraser-brush-ui.ts
++++ b/src/app/script/klecks/brushes-ui/eraser-brush-ui.ts
+@@ -8,6 +8,7 @@ import { Checkbox } from '../ui/components/checkbox';
+ import { TBrushUi } from '../kl-types';
+ import { LANG, LANGUAGE_STRINGS } from '../../language/language';
+ import { EraserBrush } from '../brushes/eraser-brush';
++import { createSymmetryBrush } from '../brushes/symmetry-brush';
+ 
+ export const eraserBrushUi = (function () {
+     const brushInterface = {
+@@ -30,7 +31,10 @@ export const eraserBrushUi = (function () {
+ 
+     brushInterface.Ui = function (p) {
+         const div = document.createElement('div'); // the gui
+-        const brush = new BRUSHES.EraserBrush();
++        const brush = createSymmetryBrush(
++        new BRUSHES.EraserBrush(),
++        () => new BRUSHES.EraserBrush(),
++    );
+         brush.setHistory(p.klHistory);
+         p.onSizeChange(brush.getSize());
+ 
+diff --git a/src/app/script/klecks/brushes-ui/pen-brush-ui.ts b/src/app/script/klecks/brushes-ui/pen-brush-ui.ts
+index 8d8b896..b681e66 100644
+--- a/src/app/script/klecks/brushes-ui/pen-brush-ui.ts
++++ b/src/app/script/klecks/brushes-ui/pen-brush-ui.ts
+@@ -10,6 +10,7 @@ import { TBrushUi } from '../kl-types';
+ import { LANG, LANGUAGE_STRINGS } from '../../language/language';
+ import { Options } from '../ui/components/options';
+ import { PenBrush } from '../brushes/pen-brush';
++import { createSymmetryBrush } from '../brushes/symmetry-brush';
+ 
+ export const penBrushUi = (function () {
+     const brushInterface = {
+@@ -55,7 +56,10 @@ export const penBrushUi = (function () {
+ 
+     brushInterface.Ui = function (p) {
+         const div = document.createElement('div'); // the gui
+-        const brush = new BRUSHES.PenBrush();
++        const brush = createSymmetryBrush(
++        new BRUSHES.PenBrush(),
++        () => new BRUSHES.PenBrush(),
++    );
+         brush.setHistory(p.klHistory);
+         p.onSizeChange(brush.getSize());
+         let sizeSlider: KlSlider;
+diff --git a/src/app/script/klecks/brushes-ui/pixel-brush-ui.ts b/src/app/script/klecks/brushes-ui/pixel-brush-ui.ts
+index 11a5ea1..ef50439 100644
+--- a/src/app/script/klecks/brushes-ui/pixel-brush-ui.ts
++++ b/src/app/script/klecks/brushes-ui/pixel-brush-ui.ts
+@@ -19,6 +19,7 @@ import {
+ import { PixelPatternPicker } from '../ui/components/pixel-pattern-picker';
+ import { showPixelPatternDialog } from '../ui/modals/show-pixel-pattern-dialog';
+ import { showError } from '../ui/modals/base/show-modal';
++import { createSymmetryBrush } from '../brushes/symmetry-brush';
+ 
+ function createTipPreview(tip: TPixelBrushTip): HTMLElement {
+     // drawn at 1x, displayed at 3x -> crisp pixels. odd scale, so it can be centered in odd sized option
+@@ -73,7 +74,10 @@ export const pixelBrushUi = (function () {
+ 
+     brushInterface.Ui = function (p) {
+         const div = document.createElement('div'); // the gui
+-        const brush = new BRUSHES.PixelBrush();
++        const brush = createSymmetryBrush(
++        new BRUSHES.PixelBrush(),
++        () => new BRUSHES.PixelBrush(),
++    );
+         brush.setHistory(p.klHistory);
+         p.onSizeChange(brush.getSize());
+         let sizeSlider: KlSlider;
+diff --git a/src/app/script/klecks/brushes-ui/sketchy-brush-ui.ts b/src/app/script/klecks/brushes-ui/sketchy-brush-ui.ts
+index 3f66a3f..529709b 100644
+--- a/src/app/script/klecks/brushes-ui/sketchy-brush-ui.ts
++++ b/src/app/script/klecks/brushes-ui/sketchy-brush-ui.ts
+@@ -7,6 +7,7 @@ import { LANG, LANGUAGE_STRINGS } from '../../language/language';
+ import { BB } from '../../bb/bb';
+ import { SketchyBrush } from '../brushes/sketchy-brush';
+ import { createImageMask } from '../../bb/base/ui';
++import { createSymmetryBrush } from '../brushes/symmetry-brush';
+ 
+ export const sketchyBrushUi = (function () {
+     const brushInterface = {
+@@ -29,7 +30,10 @@ export const sketchyBrushUi = (function () {
+ 
+     brushInterface.Ui = function (p) {
+         const div = document.createElement('div'); // the gui
+-        const brush = new BRUSHES.SketchyBrush();
++        const brush = createSymmetryBrush(
++        new BRUSHES.SketchyBrush(),
++        () => new BRUSHES.SketchyBrush(),
++    );
+         brush.setHistory(p.klHistory);
+         p.onSizeChange(brush.getSize());
+         let sizeSlider: KlSlider;
+diff --git a/src/app/script/klecks/brushes-ui/smudge-brush-ui.ts b/src/app/script/klecks/brushes-ui/smudge-brush-ui.ts
+index da02ec4..9258e97 100644
+--- a/src/app/script/klecks/brushes-ui/smudge-brush-ui.ts
++++ b/src/app/script/klecks/brushes-ui/smudge-brush-ui.ts
+@@ -8,6 +8,7 @@ import { createPenPressureToggle } from '../ui/components/create-pen-pressure-to
+ import { TBrushUi } from '../kl-types';
+ import { LANG, LANGUAGE_STRINGS } from '../../language/language';
+ import { SmudgeBrush } from '../brushes/smudge-brush';
++import { createSymmetryBrush } from '../brushes/symmetry-brush';
+ 
+ export const smudgeBrushUi = (function () {
+     const brushInterface = {
+@@ -35,7 +36,11 @@ export const smudgeBrushUi = (function () {
+ 
+     brushInterface.Ui = function (p) {
+         const div = document.createElement('div'); // the gui
+-        const brush = new BRUSHES.SmudgeBrush();
++        const brush = createSymmetryBrush(
++        new BRUSHES.SmudgeBrush(),
++        () => new BRUSHES.SmudgeBrush(),
++        { mode: 'native' },
++    );
+         brush.setHistory(p.klHistory);
+         p.onSizeChange(brush.getSize());
+         let sizeSlider: KlSlider;
+diff --git a/src/app/script/klecks/brushes/blend-brush.ts b/src/app/script/klecks/brushes/blend-brush.ts
+index 2b2a3dc..c8fbf0b 100644
+--- a/src/app/script/klecks/brushes/blend-brush.ts
++++ b/src/app/script/klecks/brushes/blend-brush.ts
+@@ -52,6 +52,9 @@ export class BlendBrush {
+     private blending: number = 0.8; // 0-1
+ 
+     private settingLockLayerAlpha: boolean = false;
++    // 全局对称（本项目补丁 P1）
++    private settingXSymmetry: boolean = false;
++    private settingYSymmetry: boolean = false;
+     private settingSizePressure: boolean = false;
+     private settingOpacityPressure: boolean = true;
+     private settingBlendingPressure: boolean = true;
+@@ -526,6 +529,22 @@ export class BlendBrush {
+     }
+ 
+     private flushDrawBuffer(): void {
++        // 全局对称（本项目补丁 P1）：镜像点在同一帧、同一份 cells 缓存里一起算掉。
++        // 这样全程只有一个实例写回画布 —— 实时镜像，且不存在"两个实例每帧互相覆盖导致交界闪烁"。
++        if ((this.settingXSymmetry || this.settingYSymmetry) && this.drawBuffer.length) {
++            const w = this.context.canvas.width;
++            const h = this.context.canvas.height;
++            const mirrored: TDrawBufferItem[] = [];
++            this.drawBuffer.forEach((item) => {
++                this.getMirroredDrawBufferItems(item, w, h).forEach((mi) => {
++                    mirrored.push(mi);
++                    this.updateRedrawBounds({ type: 'index', x1: mi.x1, y1: mi.y1, x2: mi.x2, y2: mi.y2 });
++                });
++            });
++            if (mirrored.length) {
++                this.drawBuffer.push(...mirrored);
++            }
++        }
+         this.copyFromCanvas(this.redrawBounds);
+         this.drawBuffer.forEach((item) => {
+             this.drawDot(item);
+@@ -533,6 +552,30 @@ export class BlendBrush {
+         this.drawBuffer = [];
+     }
+ 
++    /** 把一条落笔缓冲镜像成 0~3 条（左右 / 上下 / 四向） */
++    private getMirroredDrawBufferItems(item: TDrawBufferItem, w: number, h: number): TDrawBufferItem[] {
++        const flipX = this.settingXSymmetry;
++        const flipY = this.settingYSymmetry;
++        const mirror = (fx: boolean, fy: boolean): TDrawBufferItem => {
++            const mx = (x: number) => (fx ? w - 1 - x : x);
++            const my = (y: number) => (fy ? h - 1 - y : y);
++            return {
++                ...item,
++                x: mx(item.x),
++                y: my(item.y),
++                x1: mx(fx ? item.x2 : item.x1),
++                y1: my(fy ? item.y2 : item.y1),
++                x2: mx(fx ? item.x1 : item.x2),
++                y2: my(fy ? item.y1 : item.y2),
++            };
++        };
++        const out: TDrawBufferItem[] = [];
++        if (flipX) out.push(mirror(true, false));
++        if (flipY) out.push(mirror(false, true));
++        if (flipX && flipY) out.push(mirror(true, true));
++        return out;
++    }
++
+     /**
+      * Continues line to point. Samples the color exactly every BLEND_SAMPLE_DISTANCE along the line, independent of
+      * how far apart the points are. Before sampling, the dots so far are drawn.
+@@ -683,6 +726,22 @@ export class BlendBrush {
+         this.layerId = id;
+     }
+ 
++    setXSymmetry(b: boolean): void {
++        this.settingXSymmetry = b;
++    }
++
++    getXSymmetry(): boolean {
++        return this.settingXSymmetry;
++    }
++
++    setYSymmetry(b: boolean): void {
++        this.settingYSymmetry = b;
++    }
++
++    getYSymmetry(): boolean {
++        return this.settingYSymmetry;
++    }
++
+     setSizePressure(b: boolean): void {
+         this.settingSizePressure = b;
+     }
+diff --git a/src/app/script/klecks/brushes/smudge-brush.ts b/src/app/script/klecks/brushes/smudge-brush.ts
+index c2d5c6e..6a2afed 100644
+--- a/src/app/script/klecks/brushes/smudge-brush.ts
++++ b/src/app/script/klecks/brushes/smudge-brush.ts
+@@ -281,6 +281,10 @@ export class SmudgeBrush {
+     private settingHasSizePressure: boolean = false;
+     private settingHasOpacityPressure: boolean = false;
+     private settingLockLayerAlpha: boolean = false;
++    // 全局对称（本项目补丁 P1）：镜像点在同一个实例、同一份 copyImageData 里一起算，
++    // 全程只有一次 putImageData 写回 → 实时镜像，且不会出现"两个实例互相覆盖导致交界闪烁"。
++    private settingXSymmetry: boolean = false;
++    private settingYSymmetry: boolean = false;
+ 
+     private lineToolLastDot: number = 0;
+     private lastInput: TPressureInput = { x: 0, y: 0, pressure: 0 };
+@@ -532,6 +536,23 @@ export class SmudgeBrush {
+         this.drawBuffer = [];
+         points.forEach((point) => this.continueLine(point));
+ 
++        // 全局对称（本项目补丁 P1）：把镜像点追加进同一批 buffer，和原点在同一帧、同一份
++        // copyImageData 上一起计算，最后只 putImageData 一次 → 实时镜像、不会交界闪烁。
++        if ((this.settingXSymmetry || this.settingYSymmetry) && this.drawBuffer.length) {
++            const w = this.context.canvas.width;
++            const h = this.context.canvas.height;
++            const mirrored: TSmudgeParams[] = [];
++            this.drawBuffer.forEach((p) => {
++                this.getMirroredSmudgeParams(p, w, h).forEach((mp) => {
++                    mirrored.push(mp);
++                    this.updateRedrawBounds(this.getSmudgeBounds(mp, w, h));
++                });
++            });
++            if (mirrored.length) {
++                this.drawBuffer.push(...mirrored);
++            }
++        }
++
+         this.copyFromCanvas();
+         for (let i = 0; i < this.drawBuffer.length; i++) {
+             smudge(this.copyImageData, this.mask, this.drawBuffer[i]);
+@@ -631,6 +652,65 @@ export class SmudgeBrush {
+         this.context = c;
+     }
+ 
++    // ---- 全局对称（本项目补丁 P1）----
++    setXSymmetry(b: boolean): void {
++        this.settingXSymmetry = b;
++    }
++
++    getXSymmetry(): boolean {
++        return this.settingXSymmetry;
++    }
++
++    setYSymmetry(b: boolean): void {
++        this.settingYSymmetry = b;
++    }
++
++    getYSymmetry(): boolean {
++        return this.settingYSymmetry;
++    }
++
++    /** 把一组落笔参数镜像成 0~3 组（左右 / 上下 / 四向） */
++    private getMirroredSmudgeParams(p: TSmudgeParams, w: number, h: number): TSmudgeParams[] {
++        const flipX = this.settingXSymmetry;
++        const flipY = this.settingYSymmetry;
++        const mirror = (fx: boolean, fy: boolean): TSmudgeParams => {
++            // 迁移矩形按"左边界"镜像；笔刷中心按像素中心镜像
++            const mxRect = (x: number) => (fx ? w - p.size.w - x : x);
++            const myRect = (y: number) => (fy ? h - p.size.h - y : y);
++            const mx = (x: number) => (fx ? w - 1 - x : x);
++            const my = (y: number) => (fy ? h - 1 - y : y);
++            return {
++                aP: { x: mxRect(p.aP.x), y: myRect(p.aP.y) },
++                bP: { x: mxRect(p.bP.x), y: myRect(p.bP.y) },
++                size: { w: p.size.w, h: p.size.h },
++                brush: { ...p.brush, center: { x: mx(p.brush.center.x), y: my(p.brush.center.y) } },
++            };
++        };
++        const out: TSmudgeParams[] = [];
++        if (flipX) out.push(mirror(true, false));
++        if (flipY) out.push(mirror(false, true));
++        if (flipX && flipY) out.push(mirror(true, true));
++        return out;
++    }
++
++    /** 一组落笔参数影响到的像素范围（用于扩展重绘范围，保证镜像区域也被写回/记录历史） */
++    private getSmudgeBounds(p: TSmudgeParams, w: number, h: number): TIndexBounds {
++        const pad = Math.ceil(p.brush.size) + 2;
++        return {
++            type: 'index',
++            x1: Math.max(0, Math.floor(Math.min(p.aP.x, p.bP.x, p.brush.center.x) - pad)),
++            y1: Math.max(0, Math.floor(Math.min(p.aP.y, p.bP.y, p.brush.center.y) - pad)),
++            x2: Math.min(
++                w,
++                Math.ceil(Math.max(p.aP.x + p.size.w, p.bP.x + p.size.w, p.brush.center.x) + pad),
++            ),
++            y2: Math.min(
++                h,
++                Math.ceil(Math.max(p.aP.y + p.size.h, p.bP.y + p.size.h, p.brush.center.y) + pad),
++            ),
++        };
++    }
++
+     setHistory(klHistory: KlHistory): void {
+         this.klHistory = klHistory;
+     }
+diff --git a/src/app/script/klecks/brushes/symmetry-brush.ts b/src/app/script/klecks/brushes/symmetry-brush.ts
+new file mode 100644
+index 0000000..7a4302c
+--- /dev/null
++++ b/src/app/script/klecks/brushes/symmetry-brush.ts
+@@ -0,0 +1,257 @@
++/**
++ * 全局对称绘制 —— 本项目补丁（P1），不是上游原始功能。
++ *
++ * 三种模式，按笔刷特性选择（见下方 BRUSH_MODE）：
++ *
++ *  - 'live'       每收到一步就同时驱动镜像笔刷。最快、有实时镜像预览。
++ *                 适合"每步只往画布上叠像素、不整层重合成"的笔刷（铅笔/素描/像素/橡皮）。
++ *
++ *  - 'sequential' 落笔期间只记录轨迹，抬笔后再把整条镜像笔画一次性喂给镜像笔刷。
++ *                 适合"复制整层 + 每帧重合成"的笔刷（水彩 blend、晕染 smudge）：
++ *                  这两个笔刷各自持有 layer 的副本并不停把合成结果写回，
++ *                  两个实例同时落笔会互相覆盖 → 交界处闪烁。串行执行就不会。
++ *
++ *  - 'native'     不建镜像实例，改为驱动该笔刷自带的对称功能
++ *                 （异形图形 ChemyBrush 自带 setXSymmetry/setYSymmetry，
++ *                  它用 canvas 变换镜像自己的一次渲染，交给它自己做最干净）。
++ *
++ * 取舍（已知）：live/sequential 模式下镜像笔刷会往同一份 KlHistory 推自己的条目，
++ * 所以一次对称笔画需要撤销两次才能完全撤销。native 模式没有这个问题（还是同一笔）。
++ */
++import { TPressureInput } from '../kl-types';
++
++type TAnyBrush = Record<string, any>;
++type TFactory<T> = () => T;
++export type TSymmetryMode = 'live' | 'sequential' | 'native';
++
++// 落笔方法：这些不被记录/重放，而是被镜像驱动
++const DRAW_METHODS = new Set(['startLine', 'goLine', 'endLine', 'drawLineSegment', 'drawImage']);
++
++/** 全局对称开关（模块级单例，由设置面板改写，落笔时读取） */
++export const symmetryState = {
++    horizontal: false, // 左右镜像（绕竖直中轴）
++    vertical: false, // 上下镜像（绕水平中轴）
++};
++
++export function setSymmetryHorizontal(b: boolean): void {
++    symmetryState.horizontal = b;
++}
++
++export function setSymmetryVertical(b: boolean): void {
++    symmetryState.vertical = b;
++}
++
++export function getSymmetryHorizontal(): boolean {
++    return symmetryState.horizontal;
++}
++
++export function getSymmetryVertical(): boolean {
++    return symmetryState.vertical;
++}
++
++export function isSymmetryEnabled(): boolean {
++    return symmetryState.horizontal || symmetryState.vertical;
++}
++
++type TMirrorKey = 'mh' | 'mv' | 'mhv';
++
++export function createSymmetryBrush<T extends TAnyBrush>(
++    brush: T,
++    factory: TFactory<T>,
++    opts: { mode?: TSymmetryMode } = {},
++): T {
++    const mode: TSymmetryMode = opts.mode || 'live';
++    let width = 0;
++    let height = 0;
++    const callLog: [string, any[]][] = [];
++    const mirrors: Partial<Record<TMirrorKey, T>> = {};
++
++    // sequential 模式的缓冲
++    let pendingStart: [number, number, number] | null = null;
++    let pendingPoints: TPressureInput[] = [];
++
++    const replay = (target: T): void => {
++        for (const [name, args] of callLog) {
++            try {
++                target[name](...args);
++            } catch {
++                /* 单个设置失败不该拖垮落笔 */
++            }
++        }
++    };
++
++    const mirror = (key: TMirrorKey): T => {
++        let m = mirrors[key];
++        if (!m) {
++            m = factory();
++            replay(m);
++            mirrors[key] = m;
++        }
++        return m;
++    };
++
++    const activeMirrors = (): { key: TMirrorKey; flipX: boolean; flipY: boolean }[] => {
++        const arr: { key: TMirrorKey; flipX: boolean; flipY: boolean }[] = [];
++        if (symmetryState.horizontal) arr.push({ key: 'mh', flipX: true, flipY: false });
++        if (symmetryState.vertical) arr.push({ key: 'mv', flipX: false, flipY: true });
++        if (symmetryState.horizontal && symmetryState.vertical) {
++            arr.push({ key: 'mhv', flipX: true, flipY: true });
++        }
++        return arr;
++    };
++
++    const mapX = (x: number, flipX: boolean): number => (flipX && width > 0 ? width - 1 - x : x);
++    const mapY = (y: number, flipY: boolean): number => (flipY && height > 0 ? height - 1 - y : y);
++    const mirrorPoint = (p: TPressureInput, flipX: boolean, flipY: boolean): TPressureInput => ({
++        ...p,
++        x: mapX(p.x, flipX),
++        y: mapY(p.y, flipY),
++    });
++
++    // native：把全局开关合并进笔刷自己的对称设置。
++    // 注意两个坑（都踩过）：
++    //  1) 关掉全局时也必须写回 false，否则笔刷内部的标记会一直是 true → "关了关不掉"；
++    //  2) 但笔刷自己也有一套对称勾选（如化学笔刷），不能直接覆盖 → 用 local || global 合并，
++    //     靠"当前值是否等于我们上次写入的值"来判断用户有没有动过它自己的开关。
++    let localX: boolean | null = null;
++    let localY: boolean | null = null;
++    let appliedX: boolean | null = null;
++    let appliedY: boolean | null = null;
++    const applyNative = (target: T): void => {
++        const hasX = typeof target.getXSymmetry === 'function' && typeof target.setXSymmetry === 'function';
++        const hasY = typeof target.getYSymmetry === 'function' && typeof target.setYSymmetry === 'function';
++        if (!hasX && !hasY) return;
++        try {
++            if (hasX) {
++                const cur = !!target.getXSymmetry();
++                if (localX === null || (appliedX !== null && cur !== appliedX)) localX = cur;
++                const eff = localX || symmetryState.horizontal;
++                target.setXSymmetry(eff);
++                appliedX = eff;
++            }
++            if (hasY) {
++                const cur = !!target.getYSymmetry();
++                if (localY === null || (appliedY !== null && cur !== appliedY)) localY = cur;
++                const eff = localY || symmetryState.vertical;
++                target.setYSymmetry(eff);
++                appliedY = eff;
++            }
++        } catch {
++            /* ignore */
++        }
++    };
++
++    return new Proxy(brush, {
++        get(target, prop, receiver) {
++            const name = prop as string;
++            const value = Reflect.get(target, prop, receiver);
++            if (typeof value !== 'function') {
++                return value;
++            }
++            return (...args: any[]) => {
++                // ---- 设置类：记录 + 同步给已存在的镜像 + 转发给原笔刷 ----
++                // 只记录 set*（写入类）。get* 之类的读调用若也记进日志，长期会话会越滚越大，
++                // 而且创建镜像时要把整个日志重放一遍。
++                if (!DRAW_METHODS.has(name)) {
++                    if (name.startsWith('set')) {
++                        callLog.push([name, args]);
++                        if (callLog.length > 256) callLog.shift();
++                    }
++                    if (name === 'setContext' && args[0] && args[0].canvas) {
++                        width = args[0].canvas.width;
++                        height = args[0].canvas.height;
++                    }
++                    if (isSymmetryEnabled()) {
++                        for (const key of Object.keys(mirrors) as TMirrorKey[]) {
++                            try {
++                                mirrors[key]![name](...args);
++                            } catch {
++                                /* ignore */
++                            }
++                        }
++                    }
++                    return value.apply(target, args);
++                }
++
++                // ---- native 模式：只驱动笔刷自带的对称 ----
++                if (mode === 'native') {
++                    if (name === 'startLine' || name === 'drawLineSegment') applyNative(target);
++                    return value.apply(target, args);
++                }
++
++                const result = value.apply(target, args);
++                const usable = isSymmetryEnabled() && width > 0 && height > 0;
++                if (!usable) return result;
++
++                try {
++                    if (mode === 'live') {
++                        if (name === 'startLine') {
++                            const [x, y, p] = args as [number, number, number];
++                            for (const m of activeMirrors()) {
++                                mirror(m.key).startLine(mapX(x, m.flipX), mapY(y, m.flipY), p);
++                            }
++                        } else if (name === 'goLine') {
++                            const points = args[0] as TPressureInput[];
++                            for (const m of activeMirrors()) {
++                                mirror(m.key).goLine(points.map((pt) => mirrorPoint(pt, m.flipX, m.flipY)));
++                            }
++                        } else if (name === 'endLine') {
++                            for (const m of activeMirrors()) mirror(m.key).endLine();
++                        } else if (name === 'drawLineSegment') {
++                            const [x1, y1, x2, y2] = args as [number, number, number, number];
++                            for (const m of activeMirrors()) {
++                                mirror(m.key).drawLineSegment(
++                                    mapX(x1, m.flipX),
++                                    mapY(y1, m.flipY),
++                                    mapX(x2, m.flipX),
++                                    mapY(y2, m.flipY),
++                                );
++                            }
++                        } else if (name === 'drawImage') {
++                            const [im, x, y] = args as [any, number, number];
++                            for (const m of activeMirrors()) {
++                                mirror(m.key).drawImage(im, mapX(x, m.flipX), mapY(y, m.flipY));
++                            }
++                        }
++                    } else if (mode === 'sequential') {
++                        // 落笔期间只记录，抬笔后再一次性喂给镜像笔刷
++                        if (name === 'startLine') {
++                            pendingStart = args as [number, number, number];
++                            pendingPoints = [];
++                        } else if (name === 'goLine') {
++                            pendingPoints.push(...(args[0] as TPressureInput[]));
++                        } else if (name === 'endLine') {
++                            if (pendingStart) {
++                                const [sx, sy, sp] = pendingStart;
++                                const pts = pendingPoints;
++                                for (const m of activeMirrors()) {
++                                    const mb = mirror(m.key);
++                                    mb.startLine(mapX(sx, m.flipX), mapY(sy, m.flipY), sp);
++                                    if (pts.length) {
++                                        mb.goLine(pts.map((pt) => mirrorPoint(pt, m.flipX, m.flipY)));
++                                    }
++                                    mb.endLine();
++                                }
++                            }
++                            pendingStart = null;
++                            pendingPoints = [];
++                        } else if (name === 'drawLineSegment') {
++                            const [x1, y1, x2, y2] = args as [number, number, number, number];
++                            for (const m of activeMirrors()) {
++                                mirror(m.key).drawLineSegment(
++                                    mapX(x1, m.flipX),
++                                    mapY(y1, m.flipY),
++                                    mapX(x2, m.flipX),
++                                    mapY(y2, m.flipY),
++                                );
++                            }
++                        }
++                    }
++                } catch {
++                    /* 镜像失败不影响原笔刷 */
++                }
++                return result;
++            };
++        },
++    }) as T;
++}
+diff --git a/src/app/script/klecks/ui/tool-tabs/settings-ui.ts b/src/app/script/klecks/ui/tool-tabs/settings-ui.ts
+index 04e0e51..733ba4b 100644
+--- a/src/app/script/klecks/ui/tool-tabs/settings-ui.ts
++++ b/src/app/script/klecks/ui/tool-tabs/settings-ui.ts
+@@ -13,6 +13,11 @@ import { SaveReminder } from '../components/save-reminder';
+ import { showModal } from '../modals/base/show-modal';
+ import { createImage } from '../../../bb/base/ui';
+ import { PixelatedZoomToggle } from '../components/pixelated-zoom-toggle';
++import { Checkbox } from '../components/checkbox';
++import {
++    setSymmetryHorizontal,
++    setSymmetryVertical,
++} from '../../brushes/symmetry-brush';
+ 
+ const bitbofLogoImg = getIconUrl('bitbof-logo');
+ const uiSwapImg = getIconUrl('ui-swap-lr');
+@@ -148,6 +153,47 @@ export class SettingsUi {
+         });
+         this.rootEl.append(pixelatedZoomToggle.getElement());
+ 
++        // ---- 全局对称绘制（本项目补丁 P1，复用 Chemy 笔刷已有的两个翻译键）----
++        const LS_SYM_H = 'kl-symmetry-horizontal';
++        const LS_SYM_V = 'kl-symmetry-vertical';
++        setSymmetryHorizontal(LocalStorage.getItem(LS_SYM_H) === 'true');
++        setSymmetryVertical(LocalStorage.getItem(LS_SYM_V) === 'true');
++        const symmetryRow = BB.el({
++            parent: this.rootEl,
++            css: {
++                marginTop: 15,
++                display: 'flex',
++                alignItems: 'center',
++                flexWrap: 'wrap',
++                gap: 10,
++            },
++        });
++        BB.el({
++            parent: symmetryRow,
++            content: '对称绘制 / Symmetry:',
++            css: { marginRight: 5, marginBottom: 2 },
++        });
++        symmetryRow.append(
++            new Checkbox({
++                label: LANG('brush-chemy-mirror-x'),
++                init: LocalStorage.getItem(LS_SYM_H) === 'true',
++                name: 'symmetry-horizontal',
++                callback: (b) => {
++                    setSymmetryHorizontal(b);
++                    LocalStorage.setItem(LS_SYM_H, b ? 'true' : 'false');
++                },
++            }).getElement(),
++            new Checkbox({
++                label: LANG('brush-chemy-mirror-y'),
++                init: LocalStorage.getItem(LS_SYM_V) === 'true',
++                name: 'symmetry-vertical',
++                callback: (b) => {
++                    setSymmetryVertical(b);
++                    LocalStorage.setItem(LS_SYM_V, b ? 'true' : 'false');
++                },
++            }).getElement(),
++        );
++
+         // ---- save reminder ----
+         if (saveReminder) {
+             const reminderSelect = new SelectCustom({

@@ -1,0 +1,107 @@
+diff --git a/src/app/script/klecks/ui/project-viewport/project-viewport.ts b/src/app/script/klecks/ui/project-viewport/project-viewport.ts
+index e17248f..41c7122 100644
+--- a/src/app/script/klecks/ui/project-viewport/project-viewport.ts
++++ b/src/app/script/klecks/ui/project-viewport/project-viewport.ts
+@@ -4,7 +4,7 @@ import { BB } from '../../../bb/bb';
+ import { changeCanvasDimensions } from '../../../bb/base/change-canvas-dimensions';
+ import { css } from '../../../bb/base/base';
+ import { THEME } from '../../../theme/theme';
+-import { Matrix } from 'transformation-matrix';
++import { Matrix, applyToPoint, inverse } from 'transformation-matrix';
+ import { createMatrixFromTransform } from '../../../bb/transform/create-matrix-from-transform';
+ import { matrixToTuple } from '../../../bb/math/matrix-to-tuple';
+ import { DEBUG_RENDER, DEBUG_RENDERER_ENABLED } from './debug-render';
+@@ -18,6 +18,42 @@ function fixScale(scale: number, pixels: number): number {
+     return Math.round(pixels * scale) / pixels;
+ }
+ 
++/**
++ * 本项目补丁 P3（渲染优化）：算出「视口在 document 坐标里覆盖到的矩形」（四角逆变换后的外接盒 + 余量）。
++ * 用来只绘制看得见的部分，成本从「图层数 × 整张画布」降到「图层数 × 可见面积」。
++ * 缩小时 1 屏幕像素对应很多 document 像素，所以余量按缩放放大，避免边缘插值缺一两像素。
++ */
++function computeVisibleProjectRect(
++    renderedMat: Matrix,
++    viewportWidth: number,
++    viewportHeight: number,
++    projectWidth: number,
++    projectHeight: number,
++    renderedTransform: TViewportTransformXY,
++): { x: number; y: number; width: number; height: number } {
++    const inv = inverse(renderedMat);
++    const corners = [
++        { x: 0, y: 0 },
++        { x: viewportWidth, y: 0 },
++        { x: 0, y: viewportHeight },
++        { x: viewportWidth, y: viewportHeight },
++    ].map((p) => applyToPoint(inv, p));
++    const minX = Math.min(...corners.map((c) => c.x));
++    const maxX = Math.max(...corners.map((c) => c.x));
++    const minY = Math.min(...corners.map((c) => c.y));
++    const maxY = Math.max(...corners.map((c) => c.y));
++    const minScale = Math.max(
++        1e-6,
++        Math.min(Math.abs(renderedTransform.scaleX), Math.abs(renderedTransform.scaleY)),
++    );
++    const margin = Math.ceil(4 / minScale) + 2;
++    const x = Math.max(0, Math.floor(minX - margin));
++    const y = Math.max(0, Math.floor(minY - margin));
++    const right = Math.min(projectWidth, Math.ceil(maxX + margin));
++    const bottom = Math.min(projectHeight, Math.ceil(maxY + margin));
++    return { x, y, width: Math.max(0, right - x), height: Math.max(0, bottom - y) };
++}
++
+ // width, height - viewport size
+ export type TProjectViewportLayerFunc = (
+     viewportTransform: TViewportTransformXY,
+@@ -231,6 +267,27 @@ export class ProjectViewport {
+ 
+         // Resolve dynamic sources once per render so the base and its mask use the same image.
+         const renderedImages = new Map<TProjectViewportLayer, TRenderedImage>();
++        // 性能优化（本项目补丁 P3（渲染优化））：平时每帧都把「整张 document 图层」交给浏览器缩放，
++        // 大画布+多图层时成本 ≈ 图层数 × 整张画布像素数。这里算出「视口在 document 坐标里的可见矩形」，
++        // 只取这块源区域来绘制 —— 混合模式是逐像素运算，少算看不见的部分结果完全一致。
++        const visibleRect = computeVisibleProjectRect(
++            renderedMat,
++            this.width,
++            this.height,
++            this.project.width,
++            this.project.height,
++            renderedTransform,
++        );
++        // 诊断用：把"可见矩形 vs 整张画布"暴露出来，能量化这次优化省了多少
++        (window as any).__kleksVisibleRect = {
++            x: visibleRect.x,
++            y: visibleRect.y,
++            width: visibleRect.width,
++            height: visibleRect.height,
++            docWidth: this.project.width,
++            docHeight: this.project.height,
++            layers: this.project.layers.length,
++        };
+         this.compositor.draw(
+             this.ctx,
+             this.project.layers,
+@@ -254,6 +311,22 @@ export class ProjectViewport {
+                 }
+                 if (renderedImage.transform) {
+                     ctx.transform(...matrixToTuple(renderedImage.transform));
++                    ctx.drawImage(renderedImage.image, 0, 0);
++                    return;
++                }
++                const img = renderedImage.image as CanvasImageSource & { width?: number; height?: number };
++                const naturalW = typeof img.width === 'number' ? img.width : 0;
++                const naturalH = typeof img.height === 'number' ? img.height : 0;
++                if (naturalW > 0 && naturalH > 0) {
++                    // 只画可见的那块（坐标不变，因为变换已经应用到 ctx 上了）
++                    const sx = Math.max(0, Math.min(visibleRect.x, naturalW));
++                    const sy = Math.max(0, Math.min(visibleRect.y, naturalH));
++                    const sw = Math.max(0, Math.min(visibleRect.width, naturalW - sx));
++                    const sh = Math.max(0, Math.min(visibleRect.height, naturalH - sy));
++                    if (sw > 0 && sh > 0) {
++                        ctx.drawImage(img, sx, sy, sw, sh, sx, sy, sw, sh);
++                        return;
++                    }
+                 }
+                 ctx.drawImage(renderedImage.image, 0, 0);
+             },
