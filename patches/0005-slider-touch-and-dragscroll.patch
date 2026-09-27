@@ -180,3 +180,24 @@ index 3ca8d7f..b97719d 100644
          this.update();
  
          const observer = new MutationObserver(() => this.update());
+diff --git a/src/app/style/style.scss b/src/app/style/style.scss
+index d159cbd..9b4a983 100644
+--- a/src/app/style/style.scss
++++ b/src/app/style/style.scss
+@@ -127,16 +127,6 @@ a:not([href]):hover {
+     }
+ }
+ 
+-// 需要自己捕获拖拽的控件必须保持 touch-action:none，
+-// 否则手指按住滑条会被浏览器当成"滚动工具栏"
+-.kl-color-slider,
+-.kl-color-slider *,
+-.kl-slider,
+-.kl-slider *,
+-.kl-slider-manual-input,
+-.kl-slider-manual-input * {
+-    touch-action: none;
+-}
+ 
+ .kl-toolspace--left {
+     border-right: 1px solid #bbb;
