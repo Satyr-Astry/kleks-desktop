@@ -1,0 +1,7 @@
+# 构建产物与密钥不入库
+assets/
+build/
+keystore/
+*.apk
+*.jks
+klecks-icon.png

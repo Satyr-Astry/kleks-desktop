@@ -76,11 +76,22 @@ Kleks.exe --probe-perf     # 复现型压测：KLEKS_DOC=2000 KLEKS_BRUSH_SIZE=2
 
 详见 `installer/README.md`。
 
+## Android APK（手机端）
+
+同一份网页产物打成手机 App：**WebView 外壳 + 内置本地服务器**（`http://127.0.0.1:<随机端口>`，保住安全上下文，ES 模块与 ServiceWorker 都能用），不依赖 androidx / Gradle。
+
+- 包名 `com.satyr.astry.kleks`，`minSdk 24`（Android 7.0+），`targetSdk 34`，**APK 1.1 MB**
+- 手机端补齐的能力：**导出图片存进「下载」**（Kleks 走 `blob:`，DownloadManager 抓不到 → 页面脚本转 base64 走原生桥，API 29+ 用 MediaStore 免权限写入）、系统文件选择器导入、沉浸式全屏 + 常亮、外链交系统浏览器
+- 没有设备/模拟器时的验收范围：编译通过 + `apksigner verify`（v2/v3）+ `aapt2 dump badging` + APK 内网页文件与 dist **逐字节一致**（`verify_apk_assets.py`）。**未做真机运行测试**
+- 源码、构建脚本与踩坑记录见 `android/README.md`
+
 ## 目录
 
 ```
 shell/     Electron 外壳：main.js（服务器/窗口/自动保存/文件关联/自检）、perf-probe.js、package.json
 patches/   0001 全局对称绘制；0002 视口可见区渲染优化（另有 README 说明取舍）
+installer/ NSIS 安装包脚本（可选桌面/开始菜单快捷方式）+ build.py
+android/   Android APK 工程（WebView + 本地服务器）+ build.py
 tools/     pack_kleks.py（组装便携版）、make_icon.py（由上游 PNG 生成 ico）
 docs/      总架构书（模块职责/缺陷清单/变更日志）、可行性报告、功能缺口分析
 ```
