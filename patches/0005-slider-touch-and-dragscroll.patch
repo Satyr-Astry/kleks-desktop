@@ -1,0 +1,182 @@
+diff --git a/src/app/script/app/kl-app.ts b/src/app/script/app/kl-app.ts
+index 272bfda..9cca7fe 100644
+--- a/src/app/script/app/kl-app.ts
++++ b/src/app/script/app/kl-app.ts
+@@ -1106,13 +1106,13 @@ export class KlApp {
+                 bottom: 0,
+                 // 基准宽度：放大由 ui-scale 的 CSS zoom 负责（两处都放大就变成平方了）
+                 width: this.toolWidthBase,
+-                // 本项目补丁 P4：原来 overflow:hidden + touch-action:none 导致
+-                // 手机上没法用手指滑动工具栏、鼠标停在面板上滚不动，只能按小箭头。
++                // 本项目补丁 P5：可滚动范围仍保留，但**不交给浏览器原生 pan**——
++                // 原生 pan 会跟面板里的滑条抢纵向拖动（指针被取消，拖动直接断掉）。
++                // 手指滚动改由 ToolspaceScroller 自己实现（按空白背景才滚）。
+                 overflowX: 'hidden',
+                 overflowY: 'auto',
+-                overscrollBehavior: 'contain',
+                 userSelect: 'none',
+-                touchAction: 'pan-y',
++                touchAction: 'none',
+             },
+         });
+         this.toolspaceInner = BB.el({
+diff --git a/src/app/script/klecks/ui/components/kl-slider.ts b/src/app/script/klecks/ui/components/kl-slider.ts
+index f08de05..f903d65 100644
+--- a/src/app/script/klecks/ui/components/kl-slider.ts
++++ b/src/app/script/klecks/ui/components/kl-slider.ts
+@@ -306,6 +306,8 @@ export class KlSlider {
+         });
+ 
+         let virtualVal: number;
++        // 本项目补丁 P5：按"渲染宽度"换算，界面缩放（CSS zoom）下位置/速度才准
++        let renderedWidth: number = this.elementWidth;
+         const onPointer = (event: TPointerEvent) => {
+             event.eventPreventDefault();
+ 
+@@ -319,14 +321,21 @@ export class KlSlider {
+ 
+                 this.sliderWrapperEl.className = 'slider-wrapper slider-wrapper--active';
+ 
+-                if (event.button === 'left') {
+-                    let sliderValue = event.relX / this.elementWidth;
++                renderedWidth = this.sliderWrapperEl.getBoundingClientRect().width || this.elementWidth;
++
++                // 本项目补丁 P5：只有鼠标保留"按下跳到触点位置"（桌面习惯）；
++                // 触控/笔改成"抓住当前值 → 相对拖动"，否则手指一按数值就先被重设
++                if (event.button === 'left' && event.pointerType === 'mouse') {
++                    let sliderValue = event.relX / renderedWidth;
+                     sliderValue = Math.max(0, Math.min(1, sliderValue));
+                     this.value = this.sliderValueToValue(sliderValue);
+                     this.updateLabel();
+                     this.emit(false);
+                 }
+                 virtualVal = this.valueToSliderValue(this.value);
++                if (!Number.isFinite(virtualVal)) {
++                    virtualVal = 0;
++                }
+             }
+ 
+             if (event.type === 'pointermove' && ['left', 'right'].includes(event.button || '')) {
+@@ -334,7 +343,7 @@ export class KlSlider {
+                 const deltaY = Math.abs(event.pageY - (event.downPageY || 0));
+                 const factor = calcSliderFalloffFactor(deltaY, event.button === 'right');
+                 deltaX *= factor;
+-                deltaX /= this.elementWidth;
++                deltaX /= renderedWidth;
+ 
+                 virtualVal += deltaX;
+ 
+diff --git a/src/app/script/klecks/ui/components/toolspace-scroller.ts b/src/app/script/klecks/ui/components/toolspace-scroller.ts
+index 3ca8d7f..b97719d 100644
+--- a/src/app/script/klecks/ui/components/toolspace-scroller.ts
++++ b/src/app/script/klecks/ui/components/toolspace-scroller.ts
+@@ -15,6 +15,96 @@ export class ToolspaceScroller {
+     private downInterval: ReturnType<typeof setInterval> | undefined;
+     private upInterval: ReturnType<typeof setInterval> | undefined;
+ 
++    // ---- 本项目补丁 P5：手指拖拽滚动（自己实现，所以不跟面板里的滑条抢事件）----
++    private dragActive = false;
++    private dragMoved = false;
++    private dragStartY = 0;
++    private dragStartScroll = 0;
++    private lastY = 0;
++    private lastT = 0;
++    private velocity = 0;
++    private inertiaHandle: number | undefined;
++
++    /** 按在这类元素上表示"要操作控件"，不是要滚动 */
++    private isInteractive(target: EventTarget | null): boolean {
++        const el = target as HTMLElement | null;
++        if (!el || typeof el.closest !== 'function') {
++            return false;
++        }
++        return Boolean(
++            el.closest(
++                'button, input, select, textarea, a, [contenteditable], ' +
++                    '[class*="slider"], [class*="drag"], [class*="knob"], [class*="handle"]',
++            ),
++        );
++    }
++
++    private onDragStart = (e: PointerEvent): void => {
++        if (e.pointerType === 'mouse') {
++            return; // 鼠标用滚轮，不抢左键
++        }
++        if (this.isInteractive(e.target)) {
++            return; // 滑条/按钮自己处理
++        }
++        if (this.inertiaHandle !== undefined) {
++            cancelAnimationFrame(this.inertiaHandle);
++            this.inertiaHandle = undefined;
++        }
++        this.dragActive = true;
++        this.dragMoved = false;
++        this.dragStartY = e.clientY;
++        this.dragStartScroll = this.toolspace.scrollTop;
++        this.lastY = e.clientY;
++        this.lastT = performance.now();
++        this.velocity = 0;
++    };
++
++    private onDragMove = (e: PointerEvent): void => {
++        if (!this.dragActive) {
++            return;
++        }
++        const dy = e.clientY - this.dragStartY;
++        if (!this.dragMoved && Math.abs(dy) < 6) {
++            return; // 6px 内当作点击，别抢按钮
++        }
++        this.dragMoved = true;
++        this.toolspace.scrollTop = this.dragStartScroll - dy;
++        const now = performance.now();
++        const dt = Math.max(1, now - this.lastT);
++        this.velocity = (e.clientY - this.lastY) / dt; // px/ms
++        this.lastY = e.clientY;
++        this.lastT = now;
++        if (e.cancelable) {
++            e.preventDefault();
++        }
++        this.update();
++    };
++
++    private onDragEnd = (): void => {
++        if (!this.dragActive) {
++            return;
++        }
++        this.dragActive = false;
++        if (!this.dragMoved) {
++            return;
++        }
++        let v = this.velocity * 16; // px/帧
++        const step = (): void => {
++            if (Math.abs(v) < 0.5) {
++                this.inertiaHandle = undefined;
++                this.update();
++                return;
++            }
++            this.toolspace.scrollTop -= v;
++            v *= 0.94;
++            this.update();
++            this.inertiaHandle = requestAnimationFrame(step);
++        };
++        if (Math.abs(v) > 1) {
++            this.inertiaHandle = requestAnimationFrame(step);
++        }
++    };
++
+     private update(): void {
+         let newUpDisplay = this.upBtn.style.display;
+         let newDownDisplay = this.downBtn.style.display;
+@@ -133,6 +223,12 @@ export class ToolspaceScroller {
+         // 本项目补丁 P4：鼠标停在工具栏任意位置都该能滚（原来只有停在箭头那 36px 上才有效）
+         this.toolspace.addEventListener('wheel', wheelListener, { passive: false });
+ 
++        // 本项目补丁 P5：拖拽滚动（只在"空白背景"上生效）
++        this.toolspace.addEventListener('pointerdown', this.onDragStart);
++        window.addEventListener('pointermove', this.onDragMove, { passive: false });
++        window.addEventListener('pointerup', this.onDragEnd);
++        window.addEventListener('pointercancel', this.onDragEnd);
++
+         this.update();
+ 
+         const observer = new MutationObserver(() => this.update());
