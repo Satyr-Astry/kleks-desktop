@@ -64,6 +64,18 @@ Kleks.exe --probe-brushes  # 逐笔刷：帧间隔 + 像素变化（可配 KLEKS
 Kleks.exe --probe-perf     # 复现型压测：KLEKS_DOC=2000 KLEKS_BRUSH_SIZE=200
 ```
 
+## 安装包（Windows）
+
+`installer/kleks.nsi` 用 NSIS 3.x 生成 `Kleks-Setup-1.0.0.exe`：
+
+- **按用户安装**（`%LOCALAPPDATA%\Programs\Kleks`），**不需要管理员权限、不弹 UAC**，可在向导里改路径；
+- 向导里可选：**桌面快捷方式**（默认勾选）、开始菜单快捷方式、注册图片「打开方式」、装完立即启动；
+- 写 Add/Remove Programs 卸载项（HKCU），自带 `Uninstall.exe`；
+- **卸载默认保留** `Kleks-Data`（自动保存副本与设置），会先问一次；
+- 支持自动化：`Kleks-Setup-1.0.0.exe /S /D=C:\path`（`/D` 必须最后且不能加引号）。
+
+详见 `installer/README.md`。
+
 ## 目录
 
 ```
