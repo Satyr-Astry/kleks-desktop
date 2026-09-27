@@ -1,0 +1,125 @@
+diff --git a/src/app/script/app/kl-app.ts b/src/app/script/app/kl-app.ts
+index 394fb06..272bfda 100644
+--- a/src/app/script/app/kl-app.ts
++++ b/src/app/script/app/kl-app.ts
+@@ -1106,9 +1106,13 @@ export class KlApp {
+                 bottom: 0,
+                 // 基准宽度：放大由 ui-scale 的 CSS zoom 负责（两处都放大就变成平方了）
+                 width: this.toolWidthBase,
+-                overflow: 'hidden',
++                // 本项目补丁 P4：原来 overflow:hidden + touch-action:none 导致
++                // 手机上没法用手指滑动工具栏、鼠标停在面板上滚不动，只能按小箭头。
++                overflowX: 'hidden',
++                overflowY: 'auto',
++                overscrollBehavior: 'contain',
+                 userSelect: 'none',
+-                touchAction: 'none',
++                touchAction: 'pan-y',
+             },
+         });
+         this.toolspaceInner = BB.el({
+diff --git a/src/app/script/klecks/ui/components/toolspace-scroller.ts b/src/app/script/klecks/ui/components/toolspace-scroller.ts
+index e6fd9db..3ca8d7f 100644
+--- a/src/app/script/klecks/ui/components/toolspace-scroller.ts
++++ b/src/app/script/klecks/ui/components/toolspace-scroller.ts
+@@ -70,10 +70,13 @@ export class ToolspaceScroller {
+             onPointer: (e) => {
+                 if (e.type === 'pointerdown') {
+                     clearInterval(this.upInterval);
++                    // 本项目补丁 P4：长按加速（原来恒速 13px/20ms，滚到底要按很久）
++                    let step = 8;
+                     this.upInterval = setInterval(() => {
+-                        this.toolspace.scrollBy(0, -13);
++                        this.toolspace.scrollBy(0, -step);
++                        step = Math.min(step + 1.5, 30);
+                         this.update();
+-                    }, 20);
++                    }, 16);
+                 }
+                 if (e.type === 'pointerup') {
+                     const interval = this.upInterval;
+@@ -94,10 +97,13 @@ export class ToolspaceScroller {
+             onPointer: (e) => {
+                 if (e.type === 'pointerdown') {
+                     clearInterval(this.downInterval);
++                    // 本项目补丁 P4：长按加速
++                    let step = 8;
+                     this.downInterval = setInterval(() => {
+-                        this.toolspace.scrollBy(0, 13);
++                        this.toolspace.scrollBy(0, step);
++                        step = Math.min(step + 1.5, 30);
+                         this.update();
+-                    }, 20);
++                    }, 16);
+                 }
+                 if (e.type === 'pointerup') {
+                     const interval = this.downInterval;
+@@ -117,9 +123,15 @@ export class ToolspaceScroller {
+         const wheelListener = (e: WheelEvent) => {
+             this.toolspace.scrollBy(0, Math.round(0.7 * e.deltaY));
+             this.update();
++            if (e.target === this.toolspace) {
++                e.preventDefault();
++                e.stopPropagation();
++            }
+         };
+         this.upBtn.addEventListener('wheel', wheelListener, { passive: false });
+         this.downBtn.addEventListener('wheel', wheelListener, { passive: false });
++        // 本项目补丁 P4：鼠标停在工具栏任意位置都该能滚（原来只有停在箭头那 36px 上才有效）
++        this.toolspace.addEventListener('wheel', wheelListener, { passive: false });
+ 
+         this.update();
+ 
+diff --git a/src/app/style/style.scss b/src/app/style/style.scss
+index 217f4b1..d159cbd 100644
+--- a/src/app/style/style.scss
++++ b/src/app/style/style.scss
+@@ -117,6 +117,25 @@ a:not([href]):hover {
+ 
+ .kl-toolspace {
+     background-color: var(--ui-bg-color);
++    // 本项目补丁 P4：可上下滚动，但不显示滚动条（视觉保持原样）
++    scrollbar-width: none;
++    -ms-overflow-style: none;
++
++    &::-webkit-scrollbar {
++        width: 0;
++        height: 0;
++    }
++}
++
++// 需要自己捕获拖拽的控件必须保持 touch-action:none，
++// 否则手指按住滑条会被浏览器当成"滚动工具栏"
++.kl-color-slider,
++.kl-color-slider *,
++.kl-slider,
++.kl-slider *,
++.kl-slider-manual-input,
++.kl-slider-manual-input * {
++    touch-action: none;
+ }
+ 
+ .kl-toolspace--left {
+@@ -930,6 +949,22 @@ clip-path seems the cleanest.
+     background-color: rgba(180, 180, 180, 0.9);
+ }
+ 
++// 触摸设备（手机/平板）把箭头放大到易点按的尺寸
++@media (pointer: coarse) {
++    .kl-scroller {
++        width: 46px;
++        height: 46px;
++    }
++}
++
++// 触摸设备（手机/平板）把箭头放大到易点按的尺寸
++@media (pointer: coarse) {
++    .kl-scroller {
++        width: 46px;
++        height: 46px;
++    }
++}
++
+ .kl-table {
+     border-spacing: 0;
+     td {
